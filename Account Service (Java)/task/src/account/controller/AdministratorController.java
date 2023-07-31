@@ -1,6 +1,7 @@
 package account.controller;
 
 import account.request.UpdateRoleRequest;
+import account.request.UpdateUserStatusRequest;
 import account.response.DeleteUserResponse;
 import account.response.UserResponse;
 import account.service.AdministratorService;
@@ -8,6 +9,7 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
+import java.util.Map;
 
 
 @RestController
@@ -29,8 +31,8 @@ public class AdministratorController {
         return ResponseEntity.ok(adminService.updateRole(updateRoleRequest));
     }
     @PutMapping(path = "/user/access")
-    public ResponseEntity changeUserStatus() {
-        return null;
+    public ResponseEntity<Map<String,String>> changeUserStatus(@RequestBody UpdateUserStatusRequest request) {
+        return ResponseEntity.ok(adminService.changeUserStatus(request));
     }
     @DeleteMapping("/user/{email}")
     public ResponseEntity<DeleteUserResponse> deleteRole(@PathVariable String email){

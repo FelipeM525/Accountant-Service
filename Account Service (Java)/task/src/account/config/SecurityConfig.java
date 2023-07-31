@@ -25,7 +25,6 @@ public class SecurityConfig {
     }
 
 
-
     @Bean
     public SecurityFilterChain securityFilterChain(HttpSecurity http) throws Exception {
         http.httpBasic()
@@ -38,16 +37,16 @@ public class SecurityConfig {
                 .authenticationEntryPoint(customAuthenticationEntryPoint)
                 .and()
                 .authorizeHttpRequests()
-                .requestMatchers(HttpMethod.GET,"/api/admin/user/**").hasAnyRole("ADMINISTRATOR")
-                .requestMatchers(HttpMethod.DELETE,"/api/admin/user/**").hasAnyRole("ADMINISTRATOR")
-                .requestMatchers(HttpMethod.PUT,"/api/admin/user/role").hasAnyRole("ADMINISTRATOR")
-                .requestMatchers(HttpMethod.POST,"/api/acct/payments").hasAnyRole("ACCOUNTANT")
+                .requestMatchers(HttpMethod.GET, "/api/security/events/").hasAnyRole("AUDITOR")
+                .requestMatchers(HttpMethod.GET, "/api/admin/user/**").hasAnyRole("ADMINISTRATOR")
+                .requestMatchers(HttpMethod.DELETE, "/api/admin/user/**").hasAnyRole("ADMINISTRATOR")
+                .requestMatchers(HttpMethod.PUT, "/api/admin/user/**").hasAnyRole("ADMINISTRATOR")
+                .requestMatchers(HttpMethod.PUT, "/api/admin/user/role").hasAnyRole("ADMINISTRATOR")
+                .requestMatchers(HttpMethod.POST, "/api/acct/payments").hasAnyRole("ACCOUNTANT")
                 .requestMatchers(HttpMethod.PUT, "/api/acct/payments").hasAnyRole("ACCOUNTANT")
-                .requestMatchers(HttpMethod.GET, "/api/empl/payment").hasAnyRole("USER","ACCOUNTANT")
+                .requestMatchers(HttpMethod.GET, "/api/empl/payment").hasAnyRole("USER", "ACCOUNTANT")
                 .requestMatchers(HttpMethod.POST, "/api/auth/changepass").authenticated()
                 .requestMatchers(HttpMethod.POST, "/api/auth/signup", "/actuator/shutdown").permitAll()
-                .requestMatchers("/h2").permitAll()
-                .anyRequest().permitAll()
                 .and()
                 .sessionManagement()
                 .sessionCreationPolicy(SessionCreationPolicy.STATELESS);

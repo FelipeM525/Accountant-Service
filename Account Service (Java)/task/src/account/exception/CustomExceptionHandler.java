@@ -1,5 +1,8 @@
 package account.exception;
 
+import account.domain.User;
+import account.repository.UserRepository;
+import jakarta.servlet.RequestDispatcher;
 import jakarta.servlet.http.HttpServletRequest;
 import org.springframework.beans.ConversionNotSupportedException;
 import org.springframework.beans.TypeMismatchException;
@@ -10,6 +13,7 @@ import org.springframework.http.converter.HttpMessageNotReadableException;
 import org.springframework.http.converter.HttpMessageNotWritableException;
 import org.springframework.security.access.AccessDeniedException;
 import org.springframework.security.core.AuthenticationException;
+import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.web.ErrorResponseException;
 import org.springframework.web.HttpMediaTypeNotAcceptableException;
 import org.springframework.web.HttpMediaTypeNotSupportedException;
@@ -31,6 +35,11 @@ import java.time.LocalDateTime;
 
 @ControllerAdvice
 public class CustomExceptionHandler {
+    private final UserRepository userRepository;
+
+    public CustomExceptionHandler(UserRepository userRepository) {
+        this.userRepository = userRepository;
+    }
 
     @ExceptionHandler(CustomException.class)
     public ResponseEntity<ErrorResponse> handleUserExistsException(CustomException ex, HttpServletRequest request) {
@@ -61,9 +70,8 @@ public class CustomExceptionHandler {
         errorResponse.setTimestamp(LocalDateTime.now());
         errorResponse.setStatus(HttpStatus.UNAUTHORIZED.value());
         errorResponse.setError(HttpStatus.UNAUTHORIZED.getReasonPhrase());
-        errorResponse.setMessage("");
-        errorResponse.setPath(request.getRequestURI());
-
+        errorResponse.setMessage("User account is locked");
+        errorResponse.setPath((String)request.getAttribute(RequestDispatcher.ERROR_REQUEST_URI));
         return ResponseEntity.status(HttpStatus.UNAUTHORIZED).body(errorResponse);
     }
 

@@ -2,6 +2,7 @@ package account.service;
 
 import account.domain.SecurityEvent;
 import account.repository.SecurityEventsRepository;
+import org.springframework.data.domain.Sort;
 import org.springframework.stereotype.Service;
 
 import java.util.List;
@@ -15,6 +16,7 @@ public class AuditorService {
     }
 
     public List<SecurityEvent> getSecurityEvents() {
-        return securityEventsRepository.findAll();
+        Sort sort = Sort.by(Sort.Direction.ASC,"id");
+        return securityEventsRepository.findAll(sort);
     }
 }

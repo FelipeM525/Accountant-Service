@@ -1,5 +1,6 @@
 package account.exception;
 
+import account.service.SecurityEventService;
 import jakarta.servlet.ServletException;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
@@ -12,6 +13,12 @@ import java.io.IOException;
 import java.time.LocalDateTime;
 @Component
 public class CustomAccessDeniedHandler implements AccessDeniedHandler {
+    private final SecurityEventService eventService;
+
+    public CustomAccessDeniedHandler(SecurityEventService eventService) {
+        this.eventService = eventService;
+    }
+
     @Override
     public void handle(HttpServletRequest request, HttpServletResponse response, AccessDeniedException accessDeniedException) throws IOException, ServletException {
 
@@ -28,7 +35,7 @@ public class CustomAccessDeniedHandler implements AccessDeniedHandler {
 
         String jsonResponse = String.format("{\"timestamp\": \"%s\", \"status\": %d, \"error\": \"%s\", \"message\": \"%s\", \"path\": \"%s\"}",
                 timestamp, status, error, message, path);
-
+        eventService.accessDeniedEvent();
         response.getWriter().write(jsonResponse);
     }
 }

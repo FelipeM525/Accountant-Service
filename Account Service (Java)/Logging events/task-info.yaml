@@ -2699,18 +2699,24 @@ files:
 - name: src/account/domain/SecurityEvent.java
   visible: true
   learner_created: true
-- name: src/account/exception/CustomAuthenticationFailureHandler.java
-  visible: true
-  learner_created: true
-- name: src/account/exception/CustomAuthenticationSuccessHandler.java
-  visible: true
-  learner_created: true
 - name: src/account/service/AccountLockingService.java
   visible: true
   learner_created: true
-- name: src/account/security/AccountLockingFilter.java
+- name: src/account/controller/SecurityEventsController.java
+  visible: true
+  learner_created: true
+- name: src/account/config/AuthenticationSuccessEventListener.java
+  visible: true
+  learner_created: true
+- name: src/account/config/AuthenticationFailureListener.java
+  visible: true
+  learner_created: true
+- name: src/account/service/SecurityEventService.java
   visible: true
   learner_created: true
 feedback_link: https://hyperskill.org/learn/step/16606#comment
-status: Unchecked
-record: -1
+status: Solved
+feedback:
+  message: Congratulations!
+  time: "Mon, 31 Jul 2023 20:16:24 UTC"
+record: 6

@@ -19,18 +19,12 @@ import java.util.List;
 @RequestMapping("/api/auth")
 public class AuthenticationController {
     private final AuthenticationService authService;
-    private final AuditorService auditorService;
+
     private final Mapper mapper;
 
-    public AuthenticationController(AuthenticationService authService, AuditorService auditorService, Mapper mapper) {
+    public AuthenticationController(AuthenticationService authService, Mapper mapper) {
         this.authService = authService;
-        this.auditorService = auditorService;
         this.mapper = mapper;
-    }
-
-    @GetMapping(path = "/signup")
-    public ResponseEntity<List<SecurityEvent>> getSecurityEvents(){
-        return ResponseEntity.ok(auditorService.getSecurityEvents());
     }
 
     @PostMapping(path = "/signup")

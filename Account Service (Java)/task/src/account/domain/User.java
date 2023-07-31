@@ -30,8 +30,10 @@ public class User implements UserDetails {
     private String password;
     @ManyToMany(fetch = FetchType.EAGER)
     private Set<Role> roles = new HashSet<>();
-    private int failedAttempts;
-    private boolean locked;
+    @Column(name = "failed_attempt")
+    private int failedAttempt = 0;
+    @Column(name ="account_non_locked")
+    private boolean accountNonLocked = true;
 
 
     @Override
@@ -53,7 +55,11 @@ public class User implements UserDetails {
 
     @Override
     public boolean isAccountNonLocked() {
-        return true;
+        return this.accountNonLocked;
+    }
+
+    public void setAccountNonLocked(boolean accountNonLocked) {
+        this.accountNonLocked = accountNonLocked;
     }
 
     @Override
@@ -126,21 +132,15 @@ public class User implements UserDetails {
         this.roles = roles;
     }
 
-    public int getFailedAttempts() {
-        return failedAttempts;
+    public int getFailedAttempt() {
+        return failedAttempt;
     }
 
-    public void setFailedAttempts(int failedAttempts) {
-        this.failedAttempts = failedAttempts;
+    public void setFailedAttempt(int failedAttempts) {
+        this.failedAttempt = failedAttempts;
     }
 
-    public boolean isLocked() {
-        return locked;
-    }
 
-    public void setLocked(boolean locked) {
-        this.locked = locked;
-    }
 
     @Override
     public String toString() {

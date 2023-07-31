@@ -9,9 +9,13 @@ import account.repository.RoleRepository;
 import account.repository.SecurityEventsRepository;
 import account.repository.UserRepository;
 import account.request.UpdateRoleRequest;
+import account.request.UpdateUserStatusRequest;
 import account.response.DeleteUserResponse;
 import account.response.UserResponse;
+import ch.qos.logback.classic.spi.IThrowableProxy;
 import org.springframework.http.HttpStatus;
+import org.springframework.http.ResponseEntity;
+import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -24,15 +28,19 @@ public class AdministratorService {
     private final UserRepository userRepository;
     private final RoleRepository roleRepository;
     private final SecurityEventsRepository securityEventsRepository;
+    private final AccountLockingService lockingService;
+    private final SecurityEventService eventService;
     private final Mapper mapper;
     private Set<Role> businessRoles;
     private Set<Role> administrativeRoles;
 
-    public AdministratorService(UserRepository userRepository, RoleRepository roleRepository, SecurityEventsRepository securityEventsRepository, Mapper mapper) {
+    public AdministratorService(UserRepository userRepository, RoleRepository roleRepository, SecurityEventsRepository securityEventsRepository, Mapper mapper, AccountLockingService lockingService, SecurityEventService eventService) {
         this.userRepository = userRepository;
         this.roleRepository = roleRepository;
         this.securityEventsRepository = securityEventsRepository;
         this.mapper = mapper;
+        this.lockingService = lockingService;
+        this.eventService = eventService;
         this.businessRoles = new HashSet<>();
         this.administrativeRoles = new HashSet<>();
     }
@@ -49,7 +57,7 @@ public class AdministratorService {
         checkIfUserExists(email);
         checkIfUserIsAdmin(email);
         userRepository.deleteUserByEmailIgnoreCase(email);
-        registerDeleteEvent(email);
+        eventService.deleteUserEvent(email);
         DeleteUserResponse response = new DeleteUserResponse();
         response.setUser(email);
         return response;
@@ -63,8 +71,8 @@ public class AdministratorService {
     }
 
     private void checkIfUserExists(String email) {
-        if(!userRepository.existsByEmailIgnoreCase(email)){
-            throw new CustomException(HttpStatus.NOT_FOUND,"Not Found","User not found!");
+        if (!userRepository.existsByEmailIgnoreCase(email)) {
+            throw new CustomException(HttpStatus.NOT_FOUND, "Not Found", "User not found!");
         }
     }
 
@@ -78,25 +86,25 @@ public class AdministratorService {
 
         switch (operation) {
             case "GRANT":
-                if(chosenUser.getRoles().stream().anyMatch(businessRoles::contains) && administrativeRoles.contains(requestedRole)){
-                    throw new CustomException(HttpStatus.BAD_REQUEST,"Bad Request","The user cannot combine administrative and business roles!");
-                }else if(chosenUser.getRoles().stream().anyMatch(administrativeRoles::contains) && businessRoles.contains(requestedRole)){
-                    throw new CustomException(HttpStatus.BAD_REQUEST,"Bad Request","The user cannot combine administrative and business roles!");
+                if (chosenUser.getRoles().stream().anyMatch(businessRoles::contains) && administrativeRoles.contains(requestedRole)) {
+                    throw new CustomException(HttpStatus.BAD_REQUEST, "Bad Request", "The user cannot combine administrative and business roles!");
+                } else if (chosenUser.getRoles().stream().anyMatch(administrativeRoles::contains) && businessRoles.contains(requestedRole)) {
+                    throw new CustomException(HttpStatus.BAD_REQUEST, "Bad Request", "The user cannot combine administrative and business roles!");
                 }
 
                 chosenUser.getRoles().add(requestedRole);
-                registerUpdateEvent("GRANT",chosenUser,updateRoleRequest);
+                eventService.updateUserEvent("GRANT", chosenUser, updateRoleRequest);
                 break;
             case "REMOVE":
                 if (!chosenUser.getRoles().contains(requestedRole)) {
                     throw new CustomException(HttpStatus.BAD_REQUEST, "Bad Request", "The user does not have a role!");
                 } else if (requestedRole.getName().contains("ROLE_ADMINISTRATOR")) {
                     throw new CustomException(HttpStatus.BAD_REQUEST, "Bad Request", "Can't remove ADMINISTRATOR role!");
-                } else if(chosenUser.getRoles().stream().count() == 1){
-                    throw new CustomException(HttpStatus.BAD_REQUEST,"Bad Request","The user must have at least one role!");
+                } else if (chosenUser.getRoles().stream().count() == 1) {
+                    throw new CustomException(HttpStatus.BAD_REQUEST, "Bad Request", "The user must have at least one role!");
                 }
                 chosenUser.getRoles().remove(requestedRole);
-                registerUpdateEvent("REMOVE",chosenUser,updateRoleRequest);
+                eventService.updateUserEvent("REMOVE", chosenUser, updateRoleRequest);
                 break;
             default:
                 throw new CustomException(HttpStatus.BAD_REQUEST, "Bad Request", "Invalid operation!");
@@ -121,38 +129,49 @@ public class AdministratorService {
             throw new CustomException(HttpStatus.NOT_FOUND, "Not Found", "Role not found!");
         }
     }
-    private void defineGroups(){
-        administrativeRoles.add(roleRepository.findById(1L).orElseThrow(()-> new CustomException(HttpStatus.NOT_FOUND,"Not Found","Role Not Found")));
-        businessRoles.add(roleRepository.findById(2L).orElseThrow(()-> new CustomException(HttpStatus.NOT_FOUND,"Not Found","Role Not Found")));
-        businessRoles.add(roleRepository.findById(3L).orElseThrow(()-> new CustomException(HttpStatus.NOT_FOUND,"Not Found","Role Not Found")));
-    }
-    private void registerUpdateEvent(String operation,User user,UpdateRoleRequest roleRequest){
-        SecurityEvent event = new SecurityEvent();
-        if(operation.equals("GRANT")) {
 
-            event.setEventName("GRANT_ROLE");
-            event.setSubject(user.getEmail());
-            event.setObject("Grant role " + roleRequest.getRole() + " to " + user.getEmail());
-            event.setPath("/api/admin/user/role");
-        } else if(operation.equals("REMOVE")) {
-
-            event.setEventName("REMOVE_ROLE");
-            event.setSubject(user.getEmail());
-            event.setObject("Remove role " + roleRequest.getRole() + " from " + user.getEmail());
-            event.setPath("/api/admin/user/role");
-        }
-        securityEventsRepository.save(event);
-    }
-    private void registerDeleteEvent(String email) {
-        SecurityEvent event = new SecurityEvent();
-
-        event.setEventName("DELETE_USER");
-        event.setSubject(email);
-        event.setObject(email);
-        event.setPath("/api/admin/user");
+    private void defineGroups() {
+        administrativeRoles.add(roleRepository.findById(1L).orElseThrow(() -> new CustomException(HttpStatus.NOT_FOUND, "Not Found", "Role Not Found")));
+        businessRoles.add(roleRepository.findById(2L).orElseThrow(() -> new CustomException(HttpStatus.NOT_FOUND, "Not Found", "Role Not Found")));
+        businessRoles.add(roleRepository.findById(3L).orElseThrow(() -> new CustomException(HttpStatus.NOT_FOUND, "Not Found", "Role Not Found")));
+        businessRoles.add(roleRepository.findById(4L).orElseThrow(() -> new CustomException(HttpStatus.NOT_FOUND, "Not Found", "Role Not Found")));
     }
 
+    @Transactional
+    public Map<String, String> changeUserStatus(UpdateUserStatusRequest userStatusRequest) {
+        String operation = userStatusRequest.getOperation();
+        Optional<User> optionalUser = userRepository.findByEmailIgnoreCase(userStatusRequest.getUser());
+         if(!userRepository.findByEmailIgnoreCase(userStatusRequest.getUser()).isPresent()) {
+             throw new CustomException(HttpStatus.BAD_REQUEST,"Bad Request","User not found!");
+         }
+        User user = optionalUser.get();
+         if(user.getRoles().contains(roleRepository.findByNameIgnoreCase("ROLE_ADMINISTRATOR").get())) {
+             throw new CustomException(HttpStatus.BAD_REQUEST,"Bad Request","Can't lock the ADMINISTRATOR!");
+         }
+            switch (operation) {
+                case "LOCK":
+                    user.setAccountNonLocked(false);
+                    userRepository.save(user);
+                    eventService.lockUserEvent(user);
+                    break;
+
+                case "UNLOCK":
+                    user.setAccountNonLocked(true);
+                    user.setFailedAttempt(0);
+                    userRepository.save(user);
+                    eventService.unlockUserEvent(user);
+                    break;
+                default:
+                    throw new CustomException(HttpStatus.BAD_REQUEST, "Bad Request", "Invalid operation!");
+            }
+            if(userStatusRequest.getOperation().equals("UNLOCK")) {
+                Map<String, String> userStatusResponse = Map.of("status", "User " + userStatusRequest.getUser().toLowerCase() + " unlocked!");
+                return userStatusResponse;
+            }
+            Map<String, String> userStatusResponse = Map.of("status", "User " + userStatusRequest.getUser().toLowerCase() + " locked!");
+            return userStatusResponse;
 
 
+    }
 
 }

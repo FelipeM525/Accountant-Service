@@ -2,15 +2,19 @@ package account.domain;
 
 import com.fasterxml.jackson.annotation.JsonIgnore;
 import com.fasterxml.jackson.annotation.JsonProperty;
+import com.fasterxml.jackson.annotation.JsonPropertyOrder;
 import jakarta.persistence.*;
 
 import java.time.LocalDateTime;
 
 @Entity
+@JsonPropertyOrder({"id", "date", "action", "subject", "object", "path"})
 public class SecurityEvent {
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
+    @JsonIgnore
     private Long id;
+    @JsonIgnore
     private LocalDateTime date;
     @JsonProperty("action")
     private String eventName;
@@ -22,10 +26,17 @@ public class SecurityEvent {
     public SecurityEvent() {
     }
 
+    public SecurityEvent(LocalDateTime date, String eventName, String subject, String object, String path) {
+        this.date = date;
+        this.eventName = eventName;
+        this.subject = subject;
+        this.object = object;
+        this.path = path;
+    }
+
     public SecurityEvent(String eventName, String subject, String object, String path) {
         this.date = LocalDateTime.now();
         this.eventName = eventName;
-
         this.subject = subject;
         this.object = object;
         this.path = path;
@@ -41,6 +52,10 @@ public class SecurityEvent {
 
     public LocalDateTime getDate() {
         return date;
+    }
+
+    public void setDate(LocalDateTime date) {
+        this.date = date;
     }
 
     public String getEventName() {

@@ -23,13 +23,15 @@ public class AuthenticationService {
     private final UserRepository userRepository;
     private final RoleRepository roleRepository;
     private final SecurityEventsRepository securityEventsRepository;
+    private final SecurityEventService eventService;
     private final PasswordEncoder passwordEncoder;
     private final Mapper mapper;
 
-    public AuthenticationService(UserRepository userRepository, RoleRepository roleRepository, SecurityEventsRepository securityEventsRepository, PasswordEncoder passwordEncoder, Mapper mapper) {
+    public AuthenticationService(UserRepository userRepository, RoleRepository roleRepository, SecurityEventsRepository securityEventsRepository, SecurityEventService eventService, PasswordEncoder passwordEncoder, Mapper mapper) {
         this.userRepository = userRepository;
         this.roleRepository = roleRepository;
         this.securityEventsRepository = securityEventsRepository;
+        this.eventService = eventService;
         this.passwordEncoder = passwordEncoder;
         this.mapper = mapper;
     }
@@ -46,7 +48,7 @@ public class AuthenticationService {
         user.setEmail(user.getEmail().toLowerCase());
         passwordSafetyChecker(user);
         saveUser(user);
-        registerEvent(user);
+        eventService.createUserEvent(user);
         return user;
     }
     private void passwordSafetyChecker(User user){
@@ -88,6 +90,7 @@ public class AuthenticationService {
         User currentUser = (User) SecurityContextHolder.getContext().getAuthentication().getPrincipal();
         checkIfPasswordsAreTheSame(passwordRequest,currentUser);
         User updatedUser = userRepository.save(currentUser);
+        eventService.changePasswordEvent(currentUser);
         return updatedUser;
     }
     private void checkIfPasswordsAreTheSame(ChangePasswordRequest passwordRequest,User currentUser){
@@ -97,10 +100,6 @@ public class AuthenticationService {
         currentUser.setPassword(passwordEncoder.encode(passwordRequest.getNewPassword()));
     }
 
-    private void registerEvent(User user){
-        SecurityEvent createUser = new SecurityEvent("CREATE_USER", "Anonymous", user.getEmail(),"/api/auth/signup");
-        securityEventsRepository.save(createUser);
 
-    }
 
 }
