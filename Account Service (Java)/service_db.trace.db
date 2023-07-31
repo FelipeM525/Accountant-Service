@@ -1,6 +1,0 @@
-2023-07-15 13:15:03 jdbc[3]: exception
-org.h2.jdbc.JdbcSQLSyntaxErrorException: Table "_USER" not found (this database is empty); SQL statement:
-select u1_0.id,u1_0.email,u1_0.lastname,u1_0.name,u1_0.password from _user u1_0 where upper(u1_0.email)=upper(?) [42104-214]
-2023-07-15 13:15:03 jdbc[3]: exception
-org.h2.jdbc.JdbcSQLSyntaxErrorException: Table "_USER" not found (this database is empty); SQL statement:
-select u1_0.id,u1_0.email,u1_0.lastname,u1_0.name,u1_0.password from _user u1_0 where upper(u1_0.email)=upper(?) [42104-214]
